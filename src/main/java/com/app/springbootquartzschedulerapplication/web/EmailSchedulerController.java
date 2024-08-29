@@ -26,7 +26,7 @@ public class EmailSchedulerController {
     private Scheduler scheduler;
 
     @PostMapping("/schedule/email")
-     ResponseEntity<EmailResponse> scheduleEmail(@Valid @RequestBody EmailRequest emailRequest) {
+    ResponseEntity<EmailResponse> scheduleEmail(@Valid @RequestBody EmailRequest emailRequest) {
         try {
             ZonedDateTime dateTime = ZonedDateTime.of(emailRequest.getLocalDateTime(), emailRequest.getTimeZone());
             if (dateTime.isBefore(ZonedDateTime.now())) {
@@ -38,7 +38,7 @@ public class EmailSchedulerController {
             scheduler.scheduleJob(jobDetail, trigger);
 
             EmailResponse emailResponse = new EmailResponse(true, jobDetail.getKey().getName(), jobDetail.getKey().getGroup(), "Email Scheduled Successfully");
-            return  ResponseEntity.ok(emailResponse);
+            return ResponseEntity.ok(emailResponse);
         } catch (SchedulerException e) {
             log.error("error while scheduling email", e);
             EmailResponse emailResponse = new EmailResponse(false, "Error while scheduling email,Please try again");
@@ -47,30 +47,31 @@ public class EmailSchedulerController {
 
 
     }
-}
-
-private JobDetail buildJobDetail(EmailRequest emailRequest) {
-    JobDataMap jobDataMap = new JobDataMap();
-    jobDataMap.put("email", emailRequest.getEmail());
-    jobDataMap.put("subject", emailRequest.getSubject());
-    jobDataMap.put("body", emailRequest.getBody());
 
 
-    return JobBuilder.newJob(EmailJob.class)
-            .withIdentity(UUID.randomUUID().toString(), "email-jobs")
-            .withDescription("Send Email Job")
-            .usingJobData(jobDataMap)
-            .storeDurably() //store data in db without trigger
-            .build();
+    private JobDetail buildJobDetail(EmailRequest emailRequest) {
+        JobDataMap jobDataMap = new JobDataMap();
+        jobDataMap.put("email", emailRequest.getEmail());
+        jobDataMap.put("subject", emailRequest.getSubject());
+        jobDataMap.put("body", emailRequest.getBody());
 
-}
 
-private Trigger buildTrigger(JobDetail jobDetail, ZonedDateTime startAt) {
-    return TriggerBuilder.newTrigger()
-            .forJob(jobDetail)
-            .withIdentity(jobDetail.getKey().getName(), "email-triggers")
-            .withDescription("Send Email Trigger")
-            .startAt(Date.from(startAt.toInstant()))
-            .withSchedule(SimpleScheduleBuilder.simpleSchedule().withMisfireHandlingInstructionFireNow())
-            .build();
+        return JobBuilder.newJob(EmailJob.class)
+                .withIdentity(UUID.randomUUID().toString(), "email-jobs")
+                .withDescription("Send Email Job")
+                .usingJobData(jobDataMap)
+                .storeDurably() //store data in db without trigger
+                .build();
+
+    }
+
+    private Trigger buildTrigger(JobDetail jobDetail, ZonedDateTime startAt) {
+        return TriggerBuilder.newTrigger()
+                .forJob(jobDetail)
+                .withIdentity(jobDetail.getKey().getName(), "email-triggers")
+                .withDescription("Send Email Trigger")
+                .startAt(Date.from(startAt.toInstant()))
+                .withSchedule(SimpleScheduleBuilder.simpleSchedule().withMisfireHandlingInstructionFireNow())
+                .build();
+    }
 }
