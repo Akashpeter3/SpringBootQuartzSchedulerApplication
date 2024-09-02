@@ -15,4 +15,6 @@ public class TriggerInfo {
     private long timeInterval;
 
     private long initialOffset;
+
+    private String info;
 }
