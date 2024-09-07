@@ -19,6 +19,10 @@ import java.nio.charset.StandardCharsets;
 @Slf4j
 public class EmailJob extends QuartzJobBean {
 
+    private static final String SUBJECT_KEY = "subject";
+    private static final String BODY_KEY = "body";
+    private static final String EMAIL_KEY = "email";
+
     @Autowired
     private JavaMailSender mailSender;
 
@@ -27,42 +31,35 @@ public class EmailJob extends QuartzJobBean {
 
     @Override
     protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
-        // Get the job data map containing the email details
         JobDataMap jobDataMap = context.getMergedJobDataMap();
+        String emailSubject = jobDataMap.getString(SUBJECT_KEY);
+        String emailBody = jobDataMap.getString(BODY_KEY);
+        String recipientEmail = jobDataMap.getString(EMAIL_KEY);
+        String senderEmail = mailProperties.getUsername();
 
-        String subject = jobDataMap.getString("subject");
-        String body = jobDataMap.getString("body");
-        String receiverEmail = jobDataMap.getString("email");
-        String senderEmail = mailProperties.getUsername(); // Get the sender email from MailProperties
+        logEmailDetails(senderEmail, recipientEmail, emailSubject, emailBody);
 
-        System.out.println("body "+body);
-        System.out.println("receiverEmail "+receiverEmail);
-        System.out.println("senderEmail "+senderEmail);
-
-        log.info("body : "+body,"subject : "+subject,"body : "+body,"receiverEmail : "+receiverEmail);
-
-        // Send the email
-        sendEmail(senderEmail, receiverEmail, subject, body);
+//        try {
+//            sendEmail(senderEmail, recipientEmail, emailSubject, emailBody);
+//        } catch (MessagingException e) {
+//            log.error("Failed to send email: {}", e.getMessage());
+//            throw new JobExecutionException(e);
+//        }
     }
 
-    private void sendEmail(String fromEmail, String toEmail, String subject, String body) throws JobExecutionException {
-        try {
-            // Create a MimeMessage
-            MimeMessage mimeMessage = mailSender.createMimeMessage();
-            MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, StandardCharsets.UTF_8.name());
-
-            // Set email details
-            mimeMessageHelper.setFrom(fromEmail);
-            mimeMessageHelper.setTo(toEmail);
-            mimeMessageHelper.setSubject(subject);
-            mimeMessageHelper.setText(body, true); // true indicates that the body contains HTML content
-
-            // Send the email
-            mailSender.send(mimeMessage);
-        } catch (MessagingException e) {
-            // Log the error message
-            System.out.println("Failed to send email: " + e.getMessage());
-            throw new JobExecutionException(e); // Re-throw as JobExecutionException to signal failure
-        }
+    private void logEmailDetails(String senderEmail, String recipientEmail, String subject, String body) {
+        log.info("Sender: {}, Recipient: {}, Subject: {}, Body: {}", senderEmail, recipientEmail, subject, body);
     }
+
+//    private void sendEmail(String fromEmail, String toEmail, String subject, String body) throws MessagingException {
+//        MimeMessage mimeMessage = mailSender.createMimeMessage();
+//        MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, StandardCharsets.UTF_8.name());
+//
+//        mimeMessageHelper.setFrom(fromEmail);
+//        mimeMessageHelper.setTo(toEmail);
+//        mimeMessageHelper.setSubject(subject);
+//        mimeMessageHelper.setText(body, true);
+//
+//        mailSender.send(mimeMessage);
+//    }
 }
